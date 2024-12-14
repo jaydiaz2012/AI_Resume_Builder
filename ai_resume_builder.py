@@ -1,12 +1,6 @@
 import os 
 from io import BytesIO
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import streamlit as st
-import openai
-from openai import ChatCompletion
-from openai_swarm import SwarmAgent
 
 # Configure API Keys
 OPENAI_API_KEY = "" 
