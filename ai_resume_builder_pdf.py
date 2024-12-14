@@ -1,147 +1,130 @@
 import streamlit as st
-import os
-from io import BytesIO
-from fpdf import FPDF
-from PIL import Image
+import pandas as pd
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+import re
+import io
 
-def generate_resume(data, image_path=None):
-    """Generate a PDF resume based on collected data."""
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.add_page()
+class ResumeBuilderApp:
+    def __init__(self):
+        st.set_page_config(page_title="Resume Builder", page_icon=":memo:")
+        self.validate_rules = {
+            'email': r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+            'phone': r'^\+?1?\d{10,14}$'
+        }
 
-    if image_path:
-        pdf.image(image_path, x=10, y=8, w=25, h=25)
+    def validate_input(self, field, value):
+        if field == 'email':
+            return re.match(self.validate_rules['email'], value) is not None
+        elif field == 'phone':
+            return re.match(self.validate_rules['phone'], value) is not None
+        return bool(value and len(value) > 2)
 
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt=data['name'], ln=True, align='C')
-    pdf.cell(200, 10, txt=f"{data['address']} | {data['contact']} | {data['email']}", ln=True, align='C')
-    pdf.ln(10)
+    def personal_info_section(self):
+        st.header("Personal Information")
+        personal_info = {}
+        personal_info['name'] = st.text_input("Full Name")
+        personal_info['email'] = st.text_input("Email Address")
+        personal_info['phone'] = st.text_input("Phone Number")
+        personal_info['address'] = st.text_input("Address")
+        return personal_info
 
-    pdf.set_font("Arial", style='B', size=12)
-    pdf.cell(0, 10, txt="Objective", ln=True)
-    pdf.set_font("Arial", size=12)
-    pdf.multi_cell(0, 10, txt=data['objective'])
-    pdf.ln(5)
+    def education_section(self):
+        st.header("Education Background")
+        education_entries = []
+        num_edu = st.number_input("Number of Educational Entries", min_value=1, max_value=5, value=1)
+        
+        for i in range(num_edu):
+            with st.expander(f"Education Entry {i+1}"):
+                institution = st.text_input(f"Institution Name {i+1}")
+                degree = st.text_input(f"Degree/Qualification {i+1}")
+                graduation_year = st.text_input(f"Graduation Year {i+1}")
+                
+                education_entries.append({
+                    'institution': institution,
+                    'degree': degree,
+                    'graduation_year': graduation_year
+                })
+        return education_entries
 
-    pdf.set_font("Arial", style='B', size=12)
-    pdf.cell(0, 10, txt="Education", ln=True)
-    pdf.set_font("Arial", size=12)
-    pdf.multi_cell(0, 10, txt=data['education'])
-    pdf.ln(5)
+    def work_experience_section(self):
+        st.header("Work Experience")
+        work_experiences = []
+        num_jobs = st.number_input("Number of Work Experiences", min_value=1, max_value=5, value=1)
+        
+        for i in range(num_jobs):
+            with st.expander(f"Job Entry {i+1}"):
+                company = st.text_input(f"Company Name {i+1}")
+                job_title = st.text_input(f"Job Title {i+1}")
+                start_date = st.date_input(f"Start Date {i+1}")
+                end_date = st.date_input(f"End Date {i+1}")
+                responsibilities = st.text_area(f"Key Responsibilities {i+1}")
+                
+                work_experiences.append({
+                    'company': company,
+                    'job_title': job_title,
+                    'start_date': start_date,
+                    'end_date': end_date,
+                    'responsibilities': responsibilities.split('\n')
+                })
+        return work_experiences
 
-    pdf.set_font("Arial", style='B', size=12)
-    pdf.cell(0, 10, txt="Work Experience", ln=True)
-    pdf.set_font("Arial", size=12)
-    pdf.multi_cell(0, 10, txt=data['work_experience'])
-    pdf.ln(5)
+    def references_section(self):
+        st.header("Professional References")
+        references = []
+        for i in range(3):
+            with st.expander(f"Reference {i+1}"):
+                name = st.text_input(f"Reference Name {i+1}")
+                company = st.text_input(f"Reference Company {i+1}")
+                phone = st.text_input(f"Reference Phone {i+1}")
+                email = st.text_input(f"Reference Email {i+1}")
+                
+                references.append({
+                    'name': name,
+                    'company': company,
+                    'phone': phone,
+                    'email': email
+                })
+        return references
 
-    pdf.set_font("Arial", style='B', size=12)
-    pdf.cell(0, 10, txt="Skills", ln=True)
-    pdf.set_font("Arial", size=12)
-    pdf.multi_cell(0, 10, txt=data['skills'])
-    pdf.ln(5)
+    def generate_pdf(self, resume_data):
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        elements = []
 
-    pdf.set_font("Arial", style='B', size=12)
-    pdf.cell(0, 10, txt="References", ln=True)
-    pdf.set_font("Arial", size=12)
-    pdf.multi_cell(0, 10, txt=data['references'])
+        # PDF generation logic would be implemented here
+        # This is a placeholder implementation
 
-    return pdf
+        return buffer
 
-# Streamlit App
-st.title("AI Resume Builder")
-st.write("Answer the questions below to build your resume step by step.")
+    def run(self):
+        st.title("AI Resume Builder")
+        
+        personal_info = self.personal_info_section()
+        education_history = self.education_section()
+        work_experiences = self.work_experience_section()
+        references = self.references_section()
 
-# Personal Information
-st.header("Personal Information")
-name = st.text_input("Full Name")
-address = st.text_input("Address")
-contact = st.text_input("Contact Number")
-email = st.text_input("Email Address")
+        if st.button("Generate Resume PDF"):
+            resume_data = {
+                'personal_info': personal_info,
+                'education': education_history,
+                'work_experiences': work_experiences,
+                'references': references
+            }
+            
+            pdf_buffer = self.generate_pdf(resume_data)
+            st.download_button(
+                label="Download Resume PDF",
+                data=pdf_buffer.getvalue(),
+                file_name=f"{personal_info['name']}_resume.pdf",
+                mime="application/pdf"
+            )
 
-# Upload Picture
-st.header("Upload Picture (1\" x 1\")")
-image_file = st.file_uploader("Upload your picture in JPG or PNG format", type=["jpg", "png"])
-image_path = None
-if image_file:
-    img = Image.open(image_file)
-    img = img.resize((300, 300))  # Resize to 1"x1" approximately for PDF
-    image_path = "temp_image.jpg"
-    img.save(image_path)
+def main():
+    app = ResumeBuilderApp()
+    app.run()
 
-# Career Objective
-st.header("Career Objective")
-objective = st.text_area("Briefly describe your career objective (Optional)", "")
-
-# Education
-st.header("Educational Background")
-education_entries = []
-number_of_education = st.number_input("Number of educational qualifications:", min_value=1, step=1)
-for i in range(number_of_education):
-    st.subheader(f"Education {i+1}")
-    degree = st.text_input(f"Degree for Education {i+1}")
-    school = st.text_input(f"School/University for Education {i+1}")
-    year = st.text_input(f"Graduation Year for Education {i+1}")
-    education_entries.append(f"{degree}, {school} - {year}")
-education = "\n".join(education_entries)
-
-# Work Experience
-st.header("Work Experience")
-work_entries = []
-number_of_jobs = st.number_input("Number of previous jobs:", min_value=1, step=1)
-for i in range(number_of_jobs):
-    st.subheader(f"Job {i+1}")
-    job_title = st.text_input(f"Job Title for Job {i+1}")
-    company = st.text_input(f"Company Name for Job {i+1}")
-    dates = st.text_input(f"Dates of Employment for Job {i+1}")
-    responsibilities = st.text_area(f"Key Responsibilities for Job {i+1}")
-    work_entries.append(f"{job_title} at {company} ({dates})\n- {responsibilities}")
-work_experience = "\n".join(work_entries)
-
-# Skills
-st.header("Skills")
-skills = st.text_area("List your skills (comma-separated)", "")
-
-# References
-st.header("References")
-reference_entries = []
-number_of_references = st.number_input("Number of references:", min_value=1, step=1)
-for i in range(number_of_references):
-    st.subheader(f"Reference {i+1}")
-    ref_name = st.text_input(f"Name of Reference {i+1}")
-    ref_contact = st.text_input(f"Contact Number of Reference {i+1}")
-    ref_email = st.text_input(f"Email of Reference {i+1}")
-    reference_entries.append(f"{ref_name}, {ref_contact}, {ref_email}")
-references = "\n".join(reference_entries)
-
-# Generate Resume
-if st.button("Generate Resume"):
-    user_data = {
-        "name": name,
-        "address": address,
-        "contact": contact,
-        "email": email,
-        "objective": objective,
-        "education": education,
-        "work_experience": work_experience,
-        "skills": skills,
-        "references": references
-    }
-
-    pdf = generate_resume(user_data, image_path)
-    pdf_buffer = BytesIO()
-    pdf.output(pdf_buffer)
-    pdf_buffer.seek(0)
-
-    st.header("Your Resume")
-    st.download_button(
-        label="Download Resume as PDF",
-        data=pdf_buffer,
-        file_name="resume.pdf",
-        mime="application/pdf"
-    )
-
-    # Cleanup temporary image file
-    if image_path and os.path.exists(image_path):
-        os.remove(image_path)
+if __name__ == "__main__":
+    main()
