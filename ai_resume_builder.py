@@ -2,10 +2,6 @@ import os
 from io import BytesIO
 import streamlit as st
 
-# Configure API Keys
-OPENAI_API_KEY = "" 
-openai.api_key = OPENAI_API_KEY
-
 def generate_resume(data):
     """Generate a plain text resume based on collected data."""
     resume = f"""
