@@ -1,3 +1,4 @@
+!pip install streamlit reportlab
 import streamlit as st
 import pandas as pd
 from reportlab.lib.pagesizes import letter
