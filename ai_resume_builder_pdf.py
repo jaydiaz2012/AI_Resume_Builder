@@ -3,6 +3,8 @@
 import streamlit as st
 import os
 from io import BytesIO
+import fpdf
+print(fpdf.__version__)
 from fpdf import FPDF
 from PIL import Image
 
