@@ -1,7 +1,9 @@
+!pip install fpdf2
+!pip install pillow
 import streamlit as st
 import os
 from io import BytesIO
-import fpdf
+import fpdf2
 from fpdf import FPDF
 from PIL import Image
 
