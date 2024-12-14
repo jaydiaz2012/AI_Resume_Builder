@@ -1,29 +1,56 @@
-import os 
-from io import BytesIO
+!pip install fpdf2
+!pip install pillow
+!pip streamlit 
 import streamlit as st
+import os
+from io import BytesIO
+from fpdf import FPDF
+from PIL import Image
 
-def generate_resume(data):
-    """Generate a plain text resume based on collected data."""
-    resume = f"""
-    {data['name']}
-    {data['address']} | {data['contact']} | {data['email']}
+def generate_resume(data, image_path=None):
+    """Generate a PDF resume based on collected data."""
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
 
-    Objective:
-    {data['objective']}
+    if image_path:
+        pdf.image(image_path, x=10, y=8, w=25, h=25)
 
-    Education:
-    {data['education']}
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt=data['name'], ln=True, align='C')
+    pdf.cell(200, 10, txt=f"{data['address']} | {data['contact']} | {data['email']}", ln=True, align='C')
+    pdf.ln(10)
 
-    Work Experience:
-    {data['work_experience']}
+    pdf.set_font("Arial", style='B', size=12)
+    pdf.cell(0, 10, txt="Objective", ln=True)
+    pdf.set_font("Arial", size=12)
+    pdf.multi_cell(0, 10, txt=data['objective'])
+    pdf.ln(5)
 
-    Skills:
-    {data['skills']}
+    pdf.set_font("Arial", style='B', size=12)
+    pdf.cell(0, 10, txt="Education", ln=True)
+    pdf.set_font("Arial", size=12)
+    pdf.multi_cell(0, 10, txt=data['education'])
+    pdf.ln(5)
 
-    References:
-    {data['references']}
-    """
-    return resume
+    pdf.set_font("Arial", style='B', size=12)
+    pdf.cell(0, 10, txt="Work Experience", ln=True)
+    pdf.set_font("Arial", size=12)
+    pdf.multi_cell(0, 10, txt=data['work_experience'])
+    pdf.ln(5)
+
+    pdf.set_font("Arial", style='B', size=12)
+    pdf.cell(0, 10, txt="Skills", ln=True)
+    pdf.set_font("Arial", size=12)
+    pdf.multi_cell(0, 10, txt=data['skills'])
+    pdf.ln(5)
+
+    pdf.set_font("Arial", style='B', size=12)
+    pdf.cell(0, 10, txt="References", ln=True)
+    pdf.set_font("Arial", size=12)
+    pdf.multi_cell(0, 10, txt=data['references'])
+
+    return pdf
 
 # Streamlit App
 st.title("AI Resume Builder")
@@ -35,6 +62,16 @@ name = st.text_input("Full Name")
 address = st.text_input("Address")
 contact = st.text_input("Contact Number")
 email = st.text_input("Email Address")
+
+# Upload Picture
+st.header("Upload Picture (1\" x 1\")")
+image_file = st.file_uploader("Upload your picture in JPG or PNG format", type=["jpg", "png"])
+image_path = None
+if image_file:
+    img = Image.open(image_file)
+    img = img.resize((300, 300))  # Resize to 1"x1" approximately for PDF
+    image_path = "temp_image.jpg"
+    img.save(image_path)
 
 # Career Objective
 st.header("Career Objective")
@@ -95,19 +132,19 @@ if st.button("Generate Resume"):
         "references": references
     }
 
-    resume_text = generate_resume(user_data)
+    pdf = generate_resume(user_data, image_path)
+    pdf_buffer = BytesIO()
+    pdf.output(pdf_buffer)
+    pdf_buffer.seek(0)
 
     st.header("Your Resume")
-    st.text(resume_text)
-
-    # Download Option
-    buffer = BytesIO()
-    buffer.write(resume_text.encode("utf-8"))
-    buffer.seek(0)
-
     st.download_button(
-        label="Download Resume as Text File",
-        data=buffer,
-        file_name="resume.txt",
-        mime="text/plain"
+        label="Download Resume as PDF",
+        data=pdf_buffer,
+        file_name="resume.pdf",
+        mime="application/pdf"
     )
+
+    # Cleanup temporary image file
+    if image_path and os.path.exists(image_path):
+        os.remove(image_path)
