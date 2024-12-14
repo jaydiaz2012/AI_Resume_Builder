@@ -1,3 +1,5 @@
+pip install fpdf
+pip install pillow
 import streamlit as st
 import os
 from io import BytesIO
